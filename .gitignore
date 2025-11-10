@@ -1,0 +1,17 @@
+# Object files
+*.o
+
+# Dependency files
+*.d
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+bin/
+
+# Backup files
+*~
