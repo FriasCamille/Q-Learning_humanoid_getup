@@ -1,7 +1,5 @@
 #include <iostream>
 #include <mujoco/mujoco.h>
-#include <GLFW/glfw3.h>
-#include <cmath>
 
 #define ERROR ("\x1b[1;31m")
 

@@ -1,38 +1,65 @@
 #include <iostream>
 #include <vector>
+#include <random>
+
 using namespace std;
 
-#define Q(s,actions, a) (table[((s)*(actions)) + (a)]) // Acceso: table[si * actions + aj]
-
-class Q_learning
+class QLearning
 {
     private:
-        int states; 
-        int actions;       
-        float epsilon;
-        float learning_rate;
-        float gamma;
+        const int n_states;
+        const int n_actions;
+        float epsilon; 
+        const float alpha;
+        const float gamma;
+        const float decay;
         vector<float> table;
-        int s=1;
-        int a=1;
 
+        mt19937 gen;
+        uniform_real_distribution<float> dis_eps;
+        uniform_int_distribution<int> dis_action;
     public:
-        Q_learning(int sn, int an, float e, float l, float g):states(sn), actions(an), epsilon(e), learning_rate(l), gamma(g), table(states*actions,0.2f){}
 
-        void update(int s1,float R){Q(s,actions,a) = Q(s,actions, a) + learning_rate*(R + gamma*(max_Q(s1))- Q(s,actions, a));}
+        QLearning(int n_s, int n_a, float eps, float lr, float g, float d)
+        : n_states(n_s),
+          n_actions(n_a),
+          epsilon(eps),
+          alpha(lr),
+          gamma(g),
+          decay(d),
+          table(n_s * n_a, 0.0f),
+          gen(std::random_device{}()),
+          dis_eps(0.0f, 1.0f),
+          dis_action(0, n_actions - 1) {}
 
-        float max_Q(int s1)
+        inline float &Q(int s, int a) noexcept {return table[s*n_actions+a];}
+
+        inline int max_Q(int s) const noexcept
         {
-            float max_q = 0.0;
-            for (int i=0; i<actions;i++)
+            const float *row = &table[s*n_actions];
+            float maxv = row[0];
+            int i;
+            for (i=0; i<n_actions; i++ )
             {
-                if(max_q<Q(s1,actions,i))
-                {
-                    max_q= Q(s1,actions,i);
-                }
+                if(row[i]>maxv) maxv = row[i];
             }
-            return max_q;
+            return i;
+        }
+        
+        inline int e_greedy(int s) noexcept
+        {
+            if (dis_eps(gen)<epsilon) return dis_action(gen);
+            return max_Q(s);
         }
 
-    
+        inline void decay_e() noexcept{epsilon *=decay; if(epsilon<0.01) epsilon = 0.01;}
+
+        inline void update(int s, int a, float R, int s1) noexcept
+        {
+            float &qsa = Q(s,a);
+            qsa+= alpha * (R+gamma*e_greedy(s1) -qsa);
+        }
+
+        inline const vector<float>& get_table()const noexcept{return table;}
+
 };

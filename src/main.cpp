@@ -5,31 +5,28 @@
 
 int main(int argc, char* argv[]) 
 {
-    // Crear entorno
-    Environment env(argv[1]);
+    const char * model_path = (char*)"resources/darwin_forces.xml";
+    bool view =false;
+    Viewer * viewer =nullptr;
 
-    if (string(argv[2])=="true")
+    if(argc>1)
     {
-    Viewer viewer(env.get_model(), env.get_data());  
-    // Bucle principal
-    double i=1.5;
-        while (!viewer.should_close()) 
-        {
-            env.simstep();
-            cout<< env.get_imu_angles("imu_quat").y<<endl;
-            env.write_joint_force("r_elbow", i);
-            viewer.render();
-            if(env.read_joint_position("r_elbow")==1.5)env.reset();
-        }
+        if(argc>2)model_path = (char*)argv[2];
+        if(string(argv[1])=="true"|| string(argv[1])=="True"||string(argv[1])=="yes"||string(argv[1])=="y") view=true;
     }
-    // Bucle principal
-    double i=1.5;
+    Environment env(model_path);
+
+    if (view) viewer = new Viewer(env.get_model(), env.get_data());  
+
     while (true) 
     {
         env.simstep();
-        cout<< env.get_imu_angles("imu_quat").y<<endl;
-        env.write_joint_force("r_elbow", i);
-        if(env.read_joint_position("r_elbow")==1.5)env.reset();
+        //read and write something for the simulation
+        if (view )
+        {
+            viewer->render();
+            if(viewer->should_close()) break;
+        }
     }
 
     
