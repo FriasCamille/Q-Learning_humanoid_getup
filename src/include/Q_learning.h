@@ -13,7 +13,7 @@ class QLearning
         const float alpha;
         const float gamma;
         const float decay;
-        vector<float> table;
+        vector<float> Qtable;
 
         mt19937 gen;
         uniform_real_distribution<float> dis_eps;
@@ -27,16 +27,16 @@ class QLearning
           alpha(lr),
           gamma(g),
           decay(d),
-          table(n_s * n_a, 0.0f),
+          Qtable(n_s * n_a, 0.0f),
           gen(std::random_device{}()),
           dis_eps(0.0f, 1.0f),
           dis_action(0, n_actions - 1) {}
 
-        inline float &Q(int s, int a) noexcept {return table[s*n_actions+a];}
+        inline float &Q(int s, int a) noexcept {return Qtable[s*n_actions+a];}
 
         inline int max_Q(int s) const noexcept
         {
-            const float *row = &table[s*n_actions];
+            const float *row = &Qtable[s*n_actions];
             float maxv = row[0];
             int i;
             for (i=0; i<n_actions; i++ )
@@ -60,6 +60,6 @@ class QLearning
             qsa+= alpha * (R+gamma*e_greedy(s1) -qsa);
         }
 
-        inline const vector<float>& get_table()const noexcept{return table;}
+        inline const vector<float>& get_table()const noexcept{return Qtable;}
 
 };
