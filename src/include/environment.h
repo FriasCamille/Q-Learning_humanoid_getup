@@ -105,6 +105,28 @@ public:
         return imu;
     }
 
+bool collision(const char* geom_name, const char* target_name)
+{
+    int geom_id = mj_name2id(m, mjOBJ_GEOM, geom_name);
+    int target_id = mj_name2id(m, mjOBJ_GEOM, target_name);
+
+    if (geom_id == -1 || target_id == -1) {
+        cout<<ERROR<<"Error: uno de los geoms no existe."<<endl;
+        return false;
+    }
+
+    for (int i = 0; i < d->ncon; i++) {
+        const mjContact* c = &d->contact[i];
+        if ((c->geom1 == geom_id && c->geom2 == target_id) ||
+            (c->geom2 == geom_id && c->geom1 == target_id)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
     double time_now() const { return d->time; }
 
     mjModel* get_model() const { return m; }
