@@ -10,13 +10,13 @@ template <size_t N>
 struct motor {
     string lname;
     string rname;
-    const double positions[N];
+    double positions[N];
 };
 
 template <size_t N>
 struct sensor {
     string name;
-    const double positions[N];
+    double positions[N];
 };
 
 template <size_t D>
@@ -30,7 +30,7 @@ class Robot
         string robot_pos; 
         int* motor_iterators;
         int* sensor_iterators;
-        int* action_iterators;
+        int* motor_actions;
 
         Robot(const char* config_path)
         {
@@ -43,7 +43,7 @@ class Robot
             
             auto motors_config = config["motor"];
             motor_iterators = new int[motors_config.size()];
-            action_iterators = new int[motors_config.size()];
+            motor_actions = new int[motors_config.size()];
             for (size_t i = 0; i < motors_config.size(); i++)
             {
                 auto m = motors_config[i];
@@ -114,47 +114,54 @@ class Robot
             return reward;
         }
 
-        // void action_to_angle()
-        // {
-        //     for (int i=0; i<motor_number;i++)
-        //     {
-        //         if(motor_iterator[i]+action[i]>=0 && motor_iterator[i]+action[i]<=9) motor_iterator[i]+=action[i];
-        //     }
-        // }
+        void update_motor_positions()
+        {
+            for (int i=0; i<motors.size();i++)
+            {
+                if(motor_iterators[i]+motor_actions[i]>=0 && motor_iterators[i]+motor_actions[i]<=9) motor_iterators[i]+=motor_actions[i];
+            }
+        }
 
-        // int prox(double valor,  double (&lista)[resolution]) 
-        // {
-        //     auto it = lower_bound(lista.begin(), lista.end(), valor);
+        int prox(double valor,  string motor_name) 
+        {
+            int prox_iterator=0;
+            double lista[D];
+            auto it = find_if(motors.begin(), motors.end(),[&motor_name](const motor<D>& m){return m.nombre == motor_name;});
+            if (it == motors.end()) 
+            {
+                cerr<<ERROR<<"motor inexistente"<<endl;
+                return 1;
+            }
+            lista = it.positions;
+            
+            double diff= valor - lista[0];
 
-        //     if (it == lista.begin()) 
-        //     {
-        //         return 0;
-        //     } 
-        //     else if (it == lista.end()) 
-        //     {
-        //         return lista.size()-1;
-        //     } 
-        //     else 
-        //     {
-        //         double anterior = *(it - 1);
-        //         double actual = *it;
-        //         return (abs(valor - anterior) <= abs(valor - actual)) ? it - lista.begin() -1 : it - lista.begin();
-        //     }
-        // }
+            for (int i=0; i<D; i++)
+            {
+                if (valor - lista[i]<diff) prox_iterator =i;
+            }
+            return prox_iterator;
+        }
 
-        // int get_state_index()
-        // {
-        //     return motor_iterator[0]*pow(resolution,7)+ motor_iterator[1]*pow(resolution,6)+ motor_iterator[2]*pow(resolution,5)+ motor_iterator[3]*pow(resolution,4)+ motor_iterator[4]*pow(resolution,3)+ sensor_iterator[0]w(resolution,2)+ sensor_iterator[1]*pow(resolution,1);
-        // }
+        int get_state_index()
+        {
+            int state_index=0;
+            int bits =motors.size()+sensors.size();
+            for (int i=bits; i>0;i--) 
+            {
+                (i>bits-motors.size())? state_index+= (motors[i-sensors.size()]*pow(D,i)) : state_index+= (sensors[i-sensors.size()]*pow(D,i));
+            }
+            return state_index;
+        }
 
-        // void action(int act_n)
-        // {
-        //     motor_action[4] = (n % 3) - 1;  n /= 3;
-        //     motor_action[3] = (n % 3) - 1;  n /= 3;
-        //     motor_action[2] = (n % 3) - 1;  n /= 3;
-        //     motor_action[1] = (n % 3) - 1;  n /= 3;
-        //     motor_action[0] = (n % 3) - 1;
-        // }
+        void action(int n)
+        {
+            for (int i=motors.size();i>0;i--)
+            {
+                motor_actions[i] = (n % 3)-1;
+                n/=3;
+            }
+        }
 };
 
 
