@@ -64,6 +64,30 @@ public:
         d->qpos[m->jnt_qposadr[jid]] = val;
     }
 
+    void write_robot_position(const char* jname, double val) const 
+    {
+        int jid = mj_name2id(m, mjOBJ_JOINT, jname);
+        if (jid < 0) 
+        {
+            cerr << ERROR << "ERROR: Joint no valido: " << jname << endl;
+            return;
+        }
+
+        int adr = m->jnt_qposadr[jid];
+        
+        d->qpos[adr + 0] = 0.0;
+        d->qpos[adr + 1] = 0.0;
+        d->qpos[adr + 2] = 0.4;
+
+        double half = val * 0.5;
+
+        d->qpos[adr + 3] = cos(half);   
+        d->qpos[adr + 4] = 0.0;         
+        d->qpos[adr + 5] = sin(half);   
+        d->qpos[adr + 6] = 0.0;         
+    }
+
+
     void write_joint_velocity(const char* jname, double val) 
     {
         int jid = mj_name2id(m, mjOBJ_JOINT, jname);
@@ -111,7 +135,7 @@ bool collision(const char* geom_name, const char* target_name)
     int target_id = mj_name2id(m, mjOBJ_GEOM, target_name);
 
     if (geom_id == -1 || target_id == -1) {
-        cout<<ERROR<<"Error: uno de los geoms no existe."<<endl;
+        cout<<ERROR<<"Error: uno de los geoms no existe."<<geom_name<<endl;
         return false;
     }
 

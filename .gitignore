@@ -15,3 +15,4 @@ bin/
 .vscode/
 # Backup files
 getup
+MUJOCO_LOG.TXT

@@ -62,4 +62,6 @@ class QLearning
 
         inline const vector<float>& get_table()const noexcept{return Qtable;}
 
+        inline double get_epsilon(){return epsilon;}
+
 };

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <string>
 #include <random>
+#include <algorithm>
 #include <yaml-cpp/yaml.h>
 
 using namespace std;
@@ -23,9 +24,9 @@ struct sensor {
 
 int randomInt(int a, int b) 
 {
-    static std::random_device rd;      
-    static std::mt19937 gen(rd());     
-    std::uniform_int_distribution<> dist(a, b);
+    static random_device rd;      
+    static mt19937 gen(rd());     
+    uniform_int_distribution<> dist(a, b);
     return dist(gen);
 }
 
@@ -41,6 +42,8 @@ class Robot
         int* motor_iterators;
         int* sensor_iterators;
         int* motor_actions;
+        int goal_state;
+
 
         Robot(const char* config_path)
         {
@@ -58,13 +61,13 @@ class Robot
             {
                 auto m = motors_config[i];
 
-                aux.rname = m["r_name"].as<std::string>();
-                aux.lname = m["l_name"].as<std::string>();
+                aux.rname = m["r_name"].as<string>();
+                aux.lname = m["l_name"].as<string>();
 
                 double u = m["u_limit"].as<double>();
                 double l = m["l_limit"].as<double>();
 
-                step = std::abs(u - l) / D;
+                step = abs(u - l) / D;
 
                 bool zero_flag = true;
 
@@ -75,6 +78,7 @@ class Robot
                     if (aux.positions[j] >= 0 && zero_flag)
                     {
                         aux.positions[j] = 0.0;
+                        motor_iterators[i]=j;
                         zero_flag = false;
                     }
                 }
@@ -88,12 +92,12 @@ class Robot
             {
                 auto s = sensor_config[i];
 
-                saux.name = s["name"].as<std::string>();
+                saux.name = s["name"].as<string>();
 
                 double u = s["u_limit"].as<double>();
                 double l = s["l_limit"].as<double>();
 
-                step = std::abs(u - l) / D;
+                step = abs(u - l) / D;
 
                 bool zero_flag = true;
 
@@ -104,6 +108,7 @@ class Robot
                     if (saux.positions[j] >= 0 && zero_flag)
                     {
                         saux.positions[j] = 0.0;
+                        sensor_iterators[i]=j;
                         zero_flag = false;
                     }
                 }
@@ -111,16 +116,17 @@ class Robot
                 sensors.push_back(saux);
             }
 
-            robot_pos = config["position"][0]["name"].as<std::string>();
+            robot_pos = config["position"][0]["name"].as<string>();
+            goal_state =get_state_index();
         }
 
-        double reward(int colition, int goal)
+        double reward(bool colision, bool goal)
         {
             double reward=0.0;
             if (M_PI/2 - sensors[1].positions[sensor_iterators[1]]<0) reward -= 10;
-            reward-= colition*1000;
+            if(colision)reward-= 1000;
             reward--;
-            reward += goal*100;
+            if(goal)reward += 1000;
             return reward;
         }
 
@@ -132,17 +138,38 @@ class Robot
             }
         }
 
-        int prox(double valor,  string motor_name) 
+        int prox_motor(double valor,  string motor_name) 
         {
             int prox_iterator=0;
             double lista[D];
-            auto it = find_if(motors.begin(), motors.end(),[&motor_name](const motor<D>& m){return m.nombre == motor_name;});
+            auto it = find_if(motors.begin(), motors.end(),[&motor_name](const motor<D>& m){return m.rname == motor_name;});
             if (it == motors.end()) 
             {
-                cerr<<ERROR<<"motor inexistente"<<endl;
+                cerr<<ERROR<<"motor inexistente"<<motor_name<<endl;
                 return 1;
             }
-            lista = it.positions;
+            copy(it->positions,it->positions+D,lista );
+            
+            double diff= valor - lista[0];
+
+            for (int i=0; i<D; i++)
+            {
+                if (valor - lista[i]<diff) prox_iterator =i;
+            }
+            return prox_iterator;
+        }
+
+        int prox_sensor(double valor,  string sensor_name) 
+        {
+            int prox_iterator=0;
+            double lista[D];
+            auto it = find_if(sensors.begin(), sensors.end(),[&sensor_name](const sensor<D>& s){return s.name == sensor_name;});
+            if (it == sensors.end()) 
+            {
+                cerr<<ERROR<<"sensor inexistente"<<sensor_name<<endl;
+                return 1;
+            }
+            copy(it->positions,it->positions+D,lista );
             
             double diff= valor - lista[0];
 
@@ -157,9 +184,9 @@ class Robot
         {
             int state_index=0;
             int bits =motors.size()+sensors.size();
-            for (int i=bits; i>0;i--) 
+            for (long unsigned int i=bits; i>0;i--) 
             {
-                (i>bits-motors.size())? state_index+= (motors[i-sensors.size()]*pow(D,i)) : state_index+= (sensors[i-sensors.size()]*pow(D,i));
+                (i>bits-motors.size())? state_index+= (motor_iterators[i-sensors.size()]*pow(D,i)) : state_index+= (sensor_iterators[i-sensors.size()]*pow(D,i));
             }
             return state_index;
         }
@@ -175,9 +202,14 @@ class Robot
 
         void random_restart()
         {
-            for(int i=0; i<motors.size(); i++)
+            for(long unsigned int i=0; i<motors.size(); i++)
             {
                 motor_iterators[i]=randomInt(0, D);
+            }
+
+            for(long unsigned int i=0; i<sensors.size(); i++)
+            {
+                sensor_iterators[i]=randomInt(0, D);
             }
             
         }
