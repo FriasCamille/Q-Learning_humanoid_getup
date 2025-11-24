@@ -2,24 +2,34 @@
 #include <vector>
 #include <cmath>
 #include <string>
+#include <random>
 #include <yaml-cpp/yaml.h>
 
 using namespace std;
 
-template <size_t N>
+template <int N>
 struct motor {
     string lname;
     string rname;
     double positions[N];
 };
 
-template <size_t N>
+template <int N>
 struct sensor {
     string name;
     double positions[N];
 };
 
-template <size_t D>
+
+int randomInt(int a, int b) 
+{
+    static std::random_device rd;      
+    static std::mt19937 gen(rd());     
+    std::uniform_int_distribution<> dist(a, b);
+    return dist(gen);
+}
+
+template <int D>
 class Robot
 {
 
@@ -161,6 +171,15 @@ class Robot
                 motor_actions[i] = (n % 3)-1;
                 n/=3;
             }
+        }
+
+        void random_restart()
+        {
+            for(int i=0; i<motors.size(); i++)
+            {
+                motor_iterators[i]=randomInt(0, D);
+            }
+            
         }
 };
 

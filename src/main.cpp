@@ -5,23 +5,6 @@
 #include "include/Robot.h"
 #include <cmath>
 
-int randomInt(int a, int b) 
-{
-    static std::random_device rd;      
-    static std::mt19937 gen(rd());     
-    std::uniform_int_distribution<> dist(a, b);
-    return dist(gen);
-}
-
-// void random_restart(Robot robot, Environment env)
-// {
-//     for(int i=0; i<robot.motor_number; i++)
-//     {
-//         robot.motor_iterator[i]=randomInt(0, robot.resolution);
-//         //env.write_joint_position(robot.motors[i].)
-//     }
-    
-// }
 
 int main(int argc, char* argv[]) 
 {
@@ -37,6 +20,8 @@ int main(int argc, char* argv[])
     Environment env(model_path);
 
     if (view) viewer = new Viewer(env.get_model(), env.get_data());  
+
+    Robot<10> darwin("resources/config.yaml");
 
     while (true) 
     {

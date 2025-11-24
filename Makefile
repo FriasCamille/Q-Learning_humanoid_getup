@@ -1,7 +1,7 @@
 # Compiler settings - Can be customized.
 CC = g++
 CXXFLAGS = -std=c++17 -Wall -I/usr/include/mujoco
-LDFLAGS = -lmujoco -lGL -lGLEW -lGLU -lglfw -pthread
+LDFLAGS = -lmujoco -lGL -lGLEW -lGLU -lglfw -lyaml-cpp -pthread
 
 # Makefile settings - Can be customized.
 APPNAME = getup
