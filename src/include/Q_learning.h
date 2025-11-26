@@ -7,8 +7,8 @@ using namespace std;
 class QLearning
 {
     private:
-        const int n_states;
-        const int n_actions;
+        const long unsigned int n_states;
+        const long unsigned int n_actions;
         float epsilon; 
         const float alpha;
         const float gamma;
@@ -30,7 +30,7 @@ class QLearning
           Qtable(n_s * n_a, 0.0f),
           gen(std::random_device{}()),
           dis_eps(0.0f, 1.0f),
-          dis_action(0, n_actions - 1) {}
+          dis_action(0, n_actions - 1){}
 
         inline float &Q(int s, int a) noexcept {return Qtable[s*n_actions+a];}
 
@@ -38,12 +38,16 @@ class QLearning
         {
             const float *row = &Qtable[s*n_actions];
             float maxv = row[0];
-            int i;
-            for (i=0; i<n_actions; i++ )
+            int max_iterator=0;
+            for (long unsigned int i=0; i<n_actions; i++ )
             {
-                if(row[i]>maxv) maxv = row[i];
+                if(row[i]>maxv) 
+                {
+                    maxv = row[i];
+                    max_iterator=i;
+                }
             }
-            return i;
+            return max_iterator;
         }
         
         inline int e_greedy(int s) noexcept
@@ -56,8 +60,8 @@ class QLearning
 
         inline void update(int s, int a, float R, int s1) noexcept
         {
-            float &qsa = Q(s,a);
-            qsa+= alpha * (R+gamma*e_greedy(s1) -qsa);
+            float& qsa = Q(s,a);
+            qsa+= alpha * (R+gamma*Q(s1,max_Q(s1)) -qsa);
         }
 
         inline const vector<float>& get_table()const noexcept{return Qtable;}
