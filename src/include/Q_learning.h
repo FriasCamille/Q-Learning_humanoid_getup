@@ -34,7 +34,7 @@ class QLearning
 
         inline float &Q(int s, int a) noexcept {return Qtable[s*n_actions+a];}
 
-        inline int max_Q(int s) const noexcept
+        inline unsigned long int max_Q(int s) const noexcept
         {
             const float *row = &Qtable[s*n_actions];
             float maxv = row[0];
@@ -52,8 +52,7 @@ class QLearning
         
         inline int e_greedy(int s) noexcept
         {
-            if (dis_eps(gen)<epsilon) return dis_action(gen);
-            return max_Q(s);
+            return (dis_eps(gen) < epsilon) ? dis_action(gen) : max_Q(s);
         }
 
         inline void decay_e() noexcept{epsilon *=decay; if(epsilon<0.01) epsilon = 0.01;}

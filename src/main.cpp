@@ -4,11 +4,22 @@
 #include "include/viewer.h"
 #include "include/Robot.h"
 #include <cmath>
+#include <chrono>
+#include <thread>
+#include <csignal>
+#include <atomic>
 
-#define endl (cout<<"\033[0m \n")
+std::atomic<bool> running(true);
+
+void handle_sigint(int) {
+    running = false;
+}
+
+
 
 int main(int argc, char* argv[]) 
 {
+    signal(SIGINT, handle_sigint);
     YAML::Node config = YAML::LoadFile("resources/q_config.yaml");
     auto param = config["parameters"];
     auto p = param[0];
@@ -16,8 +27,9 @@ int main(int argc, char* argv[])
     const double a = p["learning_rate"].as<double>();
     const double gamma = p["gamma"].as<double>();
     const double d = p["discount"].as<double>();
+    int succes=0;
 
-    const int disc =10;
+    const int disc =5;
 
     const char * model_path = (char*)"resources/darwin_forces.xml";
     bool view =false;
@@ -34,10 +46,10 @@ int main(int argc, char* argv[])
 
     Robot<disc> darwin("resources/robot_config.yaml");
 
-    int states = (int)pow(d,darwin.motors.size()+ darwin.sensors.size());
-    int actions = (int)pow(3,darwin.motors.size());
+    long unsigned int states = (long unsigned int)pow(disc,darwin.motors.size()+ darwin.sensors.size());
+    long unsigned int actions = (long unsigned int)pow(3,darwin.motors.size());
 
-    int present_state, new_state, action_taken;
+    long unsigned int present_state, new_state, action_taken;
     double reward_given;
     bool first = true;
 
@@ -52,16 +64,20 @@ int main(int argc, char* argv[])
     for (long unsigned int i=0; i<darwin.motors.size(); i++)
     {
         env.write_joint_position(darwin.motors[i].rname.c_str(),darwin.motors[i].positions[darwin.motor_iterators[i]]);
-        env.write_joint_position(darwin.motors[i].lname.c_str(),-darwin.motors[i].positions[darwin.motor_iterators[i]]);
+        env.write_joint_position(darwin.motors[i].lname.c_str(),-1*darwin.motors[i].positions[darwin.motor_iterators[i]]);
     }
-            env.write_robot_position(darwin.robot_pos.c_str(),darwin.sensors[1].positions[darwin.sensor_iterators[1]]); //robot pose joint that means the angle in y of the robot
+        env.write_robot_position(darwin.robot_pos.c_str(),darwin.sensors[1].positions[darwin.sensor_iterators[1]]); //robot pose joint that means the angle in y of the robot
 
-    while (getup.get_epsilon()>0.01) 
+    while (running) 
     {
         //reset after fail or goal
 
         if(env.collision("head", "ground")||darwin.get_state_index()==darwin.goal_state) 
         {
+            darwin.reward_value=0;
+            if (darwin.get_state_index()==darwin.goal_state)
+                succes++;
+            cout<<"FAIL or GOAL"<<endl;
             env.reset();
             darwin.random_restart();
             for (long unsigned int i=0; i<darwin.motors.size(); i++)
@@ -74,6 +90,7 @@ int main(int argc, char* argv[])
         }
 
         //read actual state
+        cout<<"read actual state"<<endl;
 
         for (long unsigned int i=0; i<darwin.motors.size(); i++)
         {
@@ -91,27 +108,41 @@ int main(int argc, char* argv[])
         if(!first)
         {
             new_state = darwin.get_state_index();
+            cout<<"New state "<<new_state<<" OLD state "<<present_state<<" action "<<action_taken<<" reward "<<reward_given<<endl;
             getup.update(present_state,action_taken, reward_given, new_state);
+            cout<<"updated"<<endl;
             present_state = new_state;
         }
         else
         {
+            for (unsigned long int i=0; i<darwin.motors.size(); i++)
+            {
+                cout<<"Motor"<<i<<":"<<endl;
+                for (int j=0;j<disc;j++)
+                {
+                    cout<<"position"<<j<<": "<<darwin.motors[i].positions[j]<<endl;
+                }
+            }
             present_state = darwin.get_state_index();
+            cout<<"estado inicial: "<<present_state<<endl;
             first = false;
         }
 
         // e greedy algorithm
         action_taken = getup.e_greedy(present_state);
         darwin.action(action_taken);
+        darwin.update_motor_positions();
 
         //move those motors
 
         for (long unsigned int i=0; i<darwin.motors.size(); i++)
         {
+            cout<<"present motor iterator"<<darwin.motor_iterators[i]<<endl;
             env.write_joint_force(darwin.motors[i].rname.c_str(),darwin.motors[i].positions[darwin.motor_iterators[i]]);
             env.write_joint_force(darwin.motors[i].lname.c_str(),-darwin.motors[i].positions[darwin.motor_iterators[i]]);
         }
-        env.simstep();
+        for(int i=0; i<200;i++)
+            env.simstep();
 
         //see the reward
 
@@ -121,9 +152,12 @@ int main(int argc, char* argv[])
         if (view )
         {
             viewer->render();
+            //this_thread::sleep_for(std::chrono::milliseconds(400));
             if(viewer->should_close()) break;
         }
     }
+
+    cout<<"Exitos:_"<<succes<<endl;
 
     
 
