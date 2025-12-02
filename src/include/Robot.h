@@ -1,272 +1,139 @@
-#include <iostream>
-#include <vector>
+#include "Component.h"
 #include <cmath>
-#include <string>
-#include <random>
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
+#include <ranges>
 
 using namespace std;
-
-template <int N>
-struct motor {
-    string lname;
-    string rname;
-    double positions[N];
-};
-
-template <int N>
-struct sensor {
-    string name;
-    double positions[N];
-};
-
-
-int randomInt(int a, int b) 
-{
-    static random_device rd;      
-    static mt19937 gen(rd());     
-    uniform_int_distribution<> dist(a, b);
-    return dist(gen);
-}
-
-template <int D>
 class Robot
 {
+    private:
+        vector<Component> motors;
+        vector<Component> sensors;
+
+        vector<int> state;
+        vector<int> goal_iterators;
+
+        int D;
+        double reward_value;
+        string robot_pos;
+
+        inline void update_state() 
+        {
+            for(long unsigned int i=0; i< state.size();i++)
+            {
+                if(i<motors.size())
+                    state[i]=motors[i].get_iterator();
+                else    
+                    state[i] = sensors[i-motors.size()].get_iterator();
+            }
+        }
 
     public:
 
-        vector<motor<D>> motors;
-        vector<sensor<D>> sensors;
-        string robot_pos; 
-        int* motor_iterators;
-        int* sensor_iterators;
-        int* goal_iterators;
-        int* motor_actions;
-        long unsigned int goal_state;
-        double reward_value;
+        inline vector<Component> get_motors(){return motors;}
+        inline vector<Component> get_sensors(){return sensors;}
+        inline vector<int> get_iterator(){return goal_iterators;}
+        inline vector<int> get_state(){return state;}
+        inline double get_motors_position(int i){return motors[i].get_present_position();}
+        inline double get_sensors_position(int i){return sensors[i].get_present_position();}
+        inline string get_motor_r_name(int i){return motors[i].get_name()[0];}
+        inline string get_motor_l_name(int i){return motors[i].get_name()[1];}
+        inline string get_sensor_name(int i){return sensors[i].get_name()[0];}
+        inline string get_robot_pos(){return robot_pos;}
+        inline bool goal(){return (state==goal_iterators)?true:false;}
 
+        inline void set_motor(int i, double value){motors[i].prox(value);}
+        inline void set_sensor(int i, double value){sensors[i].prox(value);}
 
-        Robot(const char* config_path)
+        Robot(const char* config_path, int disc):D(disc)
         {
-            reward_value=0;
-            goal_state =0;
             YAML::Node config = YAML::LoadFile(config_path);
 
-            motor<D> aux;
-            sensor<D> saux;
-
-            double step;
-            
-            auto motors_config = config["motor"];
-            auto sensor_config = config["sensor"];
-
-            motor_iterators = new int[motors_config.size()];
-            motor_actions = new int[motors_config.size()];
-            sensor_iterators = new int[sensor_config.size()];
-            goal_iterators = new int[sensor_config.size() + motors_config.size()];
-
-            for (size_t i = 0; i < motors_config.size(); i++)
-            {
-                auto m = motors_config[i];
-
-                aux.rname = m["r_name"].as<string>();
-                aux.lname = m["l_name"].as<string>();
-
-                double u = m["u_limit"].as<double>();
-                double l = m["l_limit"].as<double>();
-
-                step = abs(u - l) / (D-1);
-
-                bool zero_flag = true;
-
-                for (int j = 0; j < D; j++)
-                {
-                    aux.positions[j] = l + j * step;
-
-                    if (aux.positions[j] >= 0 && zero_flag)
-                    {
-                        aux.positions[j] = 0.0;
-                        motor_iterators[i]=j;
-                        zero_flag = false;
-                    }
-                }
-
-                motors.push_back(aux);
-            }
-            for (size_t i = 0; i < sensor_config.size(); i++)
-            {
-                auto s = sensor_config[i];
-
-                saux.name = s["name"].as<string>();
-
-                double u = s["u_limit"].as<double>();
-                double l = s["l_limit"].as<double>();
-
-                step = abs(u - l) / (D-1);
-
-                bool zero_flag = true;
-
-                for (int j = 0; j < D; j++)
-                {
-                    saux.positions[j] = l + j * step;
-
-                    if (saux.positions[j] >= 0 && zero_flag)
-                    {
-                        saux.positions[j] = 0.0;
-                        sensor_iterators[i]=j;
-                        zero_flag = false;
-                    }
-                }
-
-                sensors.push_back(saux);
-            }
-
+            auto config_motor= config["motor"];
+            auto config_sensor= config["sensor"];
             robot_pos = config["position"][0]["name"].as<string>();
 
-            long unsigned int pot=1;
-            long unsigned bits =motors.size()+sensors.size();
-            long unsigned value=0;
-            for (long unsigned int i = 0; i < bits; i++) 
+            for (long unsigned int i =0; i<config_motor.size();i++)
             {
-                if (i < sensors.size()) 
+                Component aux;
+                auto c = config_motor[i];
+                aux.add_name(c["r_name"].as<string>());
+                aux.add_name(c["l_name"].as<string>());
+                double u = c["u_limit"].as<double>();
+                double l = c["l_limit"].as<double>();
+                double step = abs(u-l)/(D-1);
+
+                for (int j =0; j<D; j++)
                 {
-                    value = sensor_iterators[i];
-                    goal_iterators[i] = sensor_iterators[i];
+                    aux.add_position((l+j*step));
                 }
-                else 
-                {
-                    value = motor_iterators[i - sensors.size()];
-                    goal_iterators[i] = motor_iterators[i - sensors.size()];
-                }
-                goal_state += value * pot;
-                pot *= D;
+                goal_iterators.push_back(aux.prox(0.0));
+                aux.set_position(0.0,aux.prox(0.0));
+                motors.push_back(aux);
             }
+
+
+            for (long unsigned int i =0; i<config_sensor.size();i++)
+            {
+                Component aux;  
+                auto c = config_sensor[i];
+                aux.add_name(c["name"].as<string>());
+                double u = c["u_limit"].as<double>();
+                double l = c["l_limit"].as<double>();
+                double step = abs(u-l)/(D-1);
+
+                for (int j =0; j<D; j++)
+                {
+                    aux.add_position((l+j*step));
+                }
+                goal_iterators.push_back(aux.prox(0.0));
+                aux.set_position(0.0,aux.prox(0.0));
+                sensors.push_back(aux);
+            }
+            state.resize(motors.size() + sensors.size());
+            update_state(); 
         }
 
-        double reward(bool colision, bool goal)
+        double reward(bool colision, double colision_force)
         {
-            reward_value -= 10*abs(sensors[1].positions[sensor_iterators[1]]);
-            if(colision)reward_value-= 1000;
-            reward_value--;
-            if(goal)reward_value += 1000;
-            long unsigned bits =motors.size()+sensors.size();
-            for (long unsigned int i = 0; i < bits; i++) 
-            {
-                if (i < sensors.size()) 
-                {
-                    reward_value-= abs(goal_iterators[i] - sensor_iterators[i]);
-                }
-                else 
-                {
-                    reward_value-=abs(goal_iterators[i] - motor_iterators[i - sensors.size()]);
-                }
-            }
-            return reward_value;
-        }
+            double reward =0; 
+            reward --;
+            if (colision) reward-=10000;
+            reward-=abs(colision_force)*10;
+            for (long unsigned int i =0; i<state.size();i++)
+                reward-= abs(goal_iterators[i]-state[i])*10;
 
-        void update_motor_positions()
-        {
-            for (unsigned long int i=0; i<motors.size();i++)
-            {
-                cout<<"motor value = "<<motor_iterators[i]<<"+"<<motor_actions[i]<<"=";
-                if(motor_iterators[i]+motor_actions[i]>=0 && motor_iterators[i]+motor_actions[i]<=9) motor_iterators[i]+=motor_actions[i];
-                cout<<motor_iterators[i]<<endl;
-            }
-        }
+            if(goal_iterators == state) reward = -reward;
 
-        int prox_motor(double valor,  string motor_name) 
-        {
-            int prox_iterator=0;
-            double lista[D];
-            auto it = find_if(motors.begin(), motors.end(),[&motor_name](const motor<D>& m){return m.rname == motor_name;});
-            if (it == motors.end()) 
-            {
-                cerr<<ERROR<<"motor inexistente"<<motor_name<<endl;
-                return 1;
-            }
-            copy(it->positions,it->positions+D,lista );
-            
-            double diff= fabs(valor - lista[0]);
-
-            for (int i=0; i<D; i++)
-            {
-                if (fabs(valor - lista[i])<diff) 
-                {
-                    diff = fabs(valor - lista[i]);
-                    prox_iterator =i;
-                }
-            }
-            return prox_iterator;
-        }
-
-        int prox_sensor(double valor,  string sensor_name) 
-        {
-            int prox_iterator=0;
-            double lista[D];
-            auto it = find_if(sensors.begin(), sensors.end(),[&sensor_name](const sensor<D>& s){return s.name == sensor_name;});
-            if (it == sensors.end()) 
-            {
-                cerr<<ERROR<<"sensor inexistente"<<sensor_name<<endl;
-                return 1;
-            }
-            copy(it->positions,it->positions+D,lista );
-            
-            double diff= fabs(valor - lista[0]);
-
-            for (int i=0; i<D; i++)
-            {
-                if (fabs(valor - lista[i])<diff) 
-                {
-                    diff = fabs(valor - lista[i]);
-                    prox_iterator =i;
-                }
-            }
-            return prox_iterator;
+            return reward;
         }
 
         long unsigned int get_state_index()
         {
-            long unsigned int state_index=0, pot=1;
-            long unsigned bits =motors.size()+sensors.size();
-            long unsigned value=0;
-            for (long unsigned int i = 0; i < bits; i++) 
+            long unsigned int state_index=0, pot=1, value=0;
+            for (long unsigned int i=0; i<state.size();i++)
             {
-                if (i < sensors.size()) 
-                {
-                    value = sensor_iterators[i];
-                }
-                else 
-                    value = motor_iterators[i - sensors.size()];
-
-                state_index += value * pot;
-                pot *= D;
+                value = state[i];
+                state_index += value*pot;
+                pot *=D;
             }
             return state_index;
         }
 
-        void action(int n) 
+        void action(int n)
         {
-            for (int i=motors.size()-1;i>=0;i--)
+            int value=0, action=0;
+            for (long unsigned int i=0; i<motors.size();i++)
             {
-                motor_actions[i] = (n % 3)-1;
+                action=(n%3)-1;
+                value = motors[i].get_iterator() + action;
+                if (value>0 && value<D )
+                    motors[i].set_iterator(value);
                 n/=3;
             }
+            update_state();
         }
 
-        void random_restart()
-        {
-            for(long unsigned int i=0; i<motors.size(); i++)
-            {
-                motor_iterators[i]=randomInt(0, D-1);
-            }
 
-            for(long unsigned int i=0; i<sensors.size(); i++)
-            {
-                sensor_iterators[i]=randomInt(0, D);
-            }
-            
-        }
 };
-
-

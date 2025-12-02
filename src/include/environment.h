@@ -77,7 +77,7 @@ public:
         
         d->qpos[adr + 0] = 0.0;
         d->qpos[adr + 1] = 0.0;
-        d->qpos[adr + 2] = 0.4;
+        d->qpos[adr + 2] = 0.2;
 
         double half = val * 0.5;
 
@@ -135,20 +135,64 @@ bool collision(const char* geom_name, const char* target_name)
     int target_id = mj_name2id(m, mjOBJ_GEOM, target_name);
 
     if (geom_id == -1 || target_id == -1) {
-        cout<<ERROR<<"Error: uno de los geoms no existe."<<geom_name<<endl;
+        cout << "Error: uno de los geoms no existe: " << geom_name << endl;
         return false;
     }
 
-    for (int i = 0; i < d->ncon; i++) {
+    // Recorremos todos los contactos
+    for (int i = 0; i < d->ncon; i++) 
+    {
         const mjContact* c = &d->contact[i];
+
         if ((c->geom1 == geom_id && c->geom2 == target_id) ||
-            (c->geom2 == geom_id && c->geom1 == target_id)) {
-            return true;
+            (c->geom2 == geom_id && c->geom1 == target_id))
+        {
+            
+            mjtNum force[6];
+            mj_contactForce(m, d, i, force);
+            
+            double normal_force = force[2];
+            
+            // cout << "Fuerza normal = " << normal_force << " N\n";
+            if (normal_force >= 10.0)
+                return true;
         }
     }
 
     return false;
 }
+
+double collision_force(const char* geom_name, const char* target_name)
+{
+    int geom_id = mj_name2id(m, mjOBJ_GEOM, geom_name);
+    int target_id = mj_name2id(m, mjOBJ_GEOM, target_name);
+
+    if (geom_id == -1 || target_id == -1) {
+        cout << "Error: uno de los geoms no existe: " << geom_name << endl;
+        exit(1);
+    }
+
+    // Recorremos todos los contactos
+    for (int i = 0; i < d->ncon; i++) 
+    {
+        const mjContact* c = &d->contact[i];
+
+        if ((c->geom1 == geom_id && c->geom2 == target_id) ||
+            (c->geom2 == geom_id && c->geom1 == target_id))
+        {
+            
+            mjtNum force[6];
+            mj_contactForce(m, d, i, force);
+            
+            double normal_force = force[2];
+            
+            return normal_force;
+        }
+    }
+
+    return 0;
+}
+
 
 
     double time_now() const { return d->time; }

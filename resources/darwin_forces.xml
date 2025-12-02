@@ -19,7 +19,7 @@
    <default>
       <geom material="MatFrame" margin='0.001' />
       <joint limited='true' frictionloss="0.2" damping="0.05" armature="0.005" axis="0 0 1" pos="0 0 0"/>
-	  <position ctrllimited='true' kp='3.00'/>
+	  <position ctrllimited='true' kp='10.00'/>
    </default>
    <asset>
 		<mesh file="body_coll.stl"/>
@@ -61,7 +61,7 @@
 	
 	<worldbody>
 		<light directional="false" cutoff="60" exponent="1" diffuse=".5 .5 .5" specular=".1 .1 .1" pos="0.5 0.1 0.8" dir="-0.5 -0.1 -0.8"/>
-		<geom name="ground" pos="0 0 0" size="1 1 .2" material="MatGnd" type="plane"/>
+		<geom name="ground" pos="0 0 0" size="1 1 .2" material="MatGnd" type="plane" friction="2 0.005 0.0001"/>
 
       <geom type="plane" pos="-1 0 0.5" zaxis="1 0 0" size=".5 1 1" rgba=".8 .1 .1 1"/> 
       <geom type="plane" pos="1 0 0.5" zaxis="-1 0 0" size=".5 1 1" rgba=".8 .1 .1 1"/> 
@@ -71,7 +71,7 @@
       <body name="torso" pos="0 0 0.4">
          <inertial diaginertia="6.53693 6.39822 1.88344" mass="0.975599" pos="-0.003053 -0.038651 -0.019268" quat="-0.00879356 0.867004 0.0524199 0.495458"/>
          <joint name="robot_position" type="free" limited='false' damping="0" />
-         <geom mesh="body_coll" type="mesh" material="MatPlastic"/>
+         <geom name="body" mesh="body_coll" type="mesh" material="MatPlastic"/>
          <site name="imu_site" pos="0 0 0" quat="1 0 0 0" size="0.005" rgba="0 1 0 1"/>
          <body name="neck" pos="0 0 0.0235" quat="0.707107 0 0 0.707107">
             <inertial diaginertia="0.00482356 0.00482356 0.00482356" mass="0.0243577" pos="0.001424 -0.016567 -0.007128" quat="0.640564 0.00150549 0.00338323 0.767896"/>
