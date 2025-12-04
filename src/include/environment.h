@@ -34,6 +34,7 @@ public:
     }
 
     void simstep() { mj_step(m, d); }
+    void forward() { mj_forward(m, d); }
     void reset() { mj_resetData(m, d); mj_forward(m, d);}
 
     double read_joint_position(const char* jname) const 
@@ -77,7 +78,7 @@ public:
         
         d->qpos[adr + 0] = 0.0;
         d->qpos[adr + 1] = 0.0;
-        d->qpos[adr + 2] = 0.2;
+        d->qpos[adr + 2] = 0.1;
 
         double half = val * 0.5;
 
@@ -102,19 +103,21 @@ public:
         d->ctrl[act_id] = val;
     }
     
-    IMUData get_imu_angles(const char* imu_name) const 
+    double get_imu_pitch(const char* imu_loc) const 
     {
-        int sid = mj_name2id(m, mjOBJ_SENSOR, imu_name);
-        if (sid < 0) { cerr << ERROR << "No se encontró el sensor: " << imu_name << endl; exit(1); }
-        const double* q = d->sensordata + m->sensor_adr[sid];
-        double w = q[0], x = q[1], y = q[2], z = q[3];
+        int torso_id = mj_name2id(m, mjOBJ_BODY, imu_loc);
+         const double* q = d->xquat + 4 * torso_id;   // w,x,y,z
 
-        IMUData imu;
-        imu.x = atan2(2*(w*x + y*z), 1 - 2*(x*x + y*y)); // roll
-        imu.y = asin(2*(w*y - z*x));                     // pitch
-        imu.z = atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z)); // yaw
-        return imu;
-    }
+        double Zw[3];
+        double z_local[3] = {0, 0, 1};  
+        mju_rotVecQuat(Zw, z_local, q);
+
+        double pitch = atan2(-Zw[0], Zw[2]);
+
+        return pitch;
+       }
+
+
 
     IMUData get_imu_vel(const char* imu_name) const 
     {
@@ -154,7 +157,7 @@ bool collision(const char* geom_name, const char* target_name)
             double normal_force = force[2];
             
             // cout << "Fuerza normal = " << normal_force << " N\n";
-            if (normal_force >= 10.0)
+            if (normal_force >= 20.0)
                 return true;
         }
     }

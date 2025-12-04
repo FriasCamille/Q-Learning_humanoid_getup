@@ -29,7 +29,7 @@ sensor:
     l_limit: -5.0
     u_limit: 5.0
     
-  - name: "imu_quat"
+  - name: "torso"
     l_limit: -3.14
     u_limit: 3.14
 

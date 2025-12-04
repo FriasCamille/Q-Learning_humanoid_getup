@@ -2,7 +2,6 @@
 #include <cmath>
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
-#include <ranges>
 
 using namespace std;
 class Robot
@@ -95,14 +94,14 @@ class Robot
             update_state(); 
         }
 
-        double reward(bool colision, double colision_force)
+        double reward(bool colision, double angle)
         {
             double reward =0; 
             reward --;
             if (colision) reward-=10000;
-            reward-=abs(colision_force)*10;
-            for (long unsigned int i =0; i<state.size();i++)
-                reward-= abs(goal_iterators[i]-state[i])*10;
+            reward-=exp(1.0/(3.2-abs(angle)));
+            // for (long unsigned int i =0; i<state.size();i++)
+            //     reward-= abs(goal_iterators[i]-state[i])*10;
 
             if(goal_iterators == state) reward = -reward;
 

@@ -1,6 +1,6 @@
 # Compiler settings - Can be customized.
-CC = g++-11
-CXXFLAGS = -std=c++20 -Wall -I/usr/include/mujoco -O3 -march=native -flto
+CC = g++
+CXXFLAGS = -std=c++17 -Wall -I/usr/include/mujoco -O3 
 LDFLAGS = -lmujoco -lGL -lGLEW -lGLU -lglfw -lyaml-cpp -pthread
 
 # Makefile settings - Can be customized.
