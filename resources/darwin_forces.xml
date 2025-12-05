@@ -145,7 +145,7 @@
                         <body name="foot_l" pos="0 0 0" quat="0.707107 -0.707107 0 0">
                            <inertial diaginertia="0.120855 0.109532 0.0411304" mass="0.0794462" pos="-0.025995 -0.009506 -0.000503" quat="0.997965 0.0519065 0.00385358 -0.0368208"/>
                            <joint name="l_ankle_roll" range="-1.0995574288 .7679448709" type="hinge"/>
-                           <geom mesh="ankle2_l_coll" type="mesh" material="MatPlastic"/>
+                           <geom name= "l_foot" mesh="ankle2_l_coll" type="mesh" material="MatPlastic"/>
                         </body>
                      </body>
                   </body>
@@ -180,7 +180,7 @@
                         <body name="foot_r" pos="0 0 0" quat="0.707107 -0.707107 0 0">
                            <inertial diaginertia="0.120855 0.109532 0.0411304" mass="0.0794462" pos="0.025995 -0.009506 -0.000503" quat="0.997965 0.0519065 0.00385358 -0.0368208"/>
                            <joint name="r_ankle_roll" range="-.7679448709 1.0995574288" type="hinge"/>
-                           <geom mesh="ankle2_r_coll" type="mesh" material="MatPlastic"/>
+                           <geom name= "r_foot" mesh="ankle2_r_coll" type="mesh" material="MatPlastic"/>
                         </body>
                      </body>
                   </body>
