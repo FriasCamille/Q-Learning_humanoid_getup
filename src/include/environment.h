@@ -132,38 +132,52 @@ public:
         return imu;
     }
 
-bool collision(const char* geom_name, const char* target_name)
+bool collision(const char* geom_name, const char* target_name, bool verbose = false)
 {
     int geom_id = mj_name2id(m, mjOBJ_GEOM, geom_name);
     int target_id = mj_name2id(m, mjOBJ_GEOM, target_name);
-
+    
     if (geom_id == -1 || target_id == -1) {
-        cout << "Error: uno de los geoms no existe: " << geom_name << endl;
+        if(verbose) cout << "Error: uno de los geoms no existe: " << geom_name << endl;
         return false;
     }
-
-    // Recorremos todos los contactos
+    
     for (int i = 0; i < d->ncon; i++) 
     {
         const mjContact* c = &d->contact[i];
-
+        
         if ((c->geom1 == geom_id && c->geom2 == target_id) ||
             (c->geom2 == geom_id && c->geom1 == target_id))
         {
-            
             mjtNum force[6];
             mj_contactForce(m, d, i, force);
-            
             double normal_force = force[2];
             
-            // cout << "Fuerza normal = " << normal_force << " N\n";
+            if(verbose) {
+                cout << "Contacto detectado: " << geom_name << " con " << target_name 
+                     << ", fuerza = " << normal_force << " N" << endl;
+            }
+            
             if (normal_force >= 20.0)
                 return true;
         }
     }
-
+    
     return false;
 }
+
+double get_torso_height(const char* torso_name) const 
+        {
+            int torso_id = mj_name2id(m, mjOBJ_BODY, torso_name);
+            if (torso_id < 0) 
+            {
+                cerr << ERROR << "Torso no encontrado: " << torso_name << endl;
+                return 0.0;
+            }
+            
+            // La altura es la coordenada Z de la posición del torso
+            return d->xpos[torso_id * 3 + 2];  // xpos[body_id*3 + 2] = coordenada Z
+        }
 
 double collision_force(const char* geom_name, const char* target_name)
 {
