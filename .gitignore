@@ -13,6 +13,7 @@
 build/
 bin/
 .vscode/
+trainings/
 # Backup files
 getup
 MUJOCO_LOG.TXT
