@@ -43,10 +43,12 @@ The resulting Q table will be saved by default in the "resources/trainings/getup
 ## Reward function 
 You can change it in the function reward in "src/include/Robot.h"
 The current reward function is:
-$$Reward = collision_reward + ground_reward + angle_reward + COM_reward + torso_height_reward + goal_reward - 0.1$$
+
+$$Reward = collision reward + ground reward + angle reward + COM reward + torso height reward + goal reward - 0.1$$
+
 where:
 
-### Collision_reward
+### Collision reward
 Just a minus 100 if the enviroment detects any colission, now is reading the torso mesh collision you can change it in main.cpp and a collision is detected when the force between the torso and the ground exceds 40 N you can change the value in the function collision in "src/include/environment.h"
 
 ### ground reward
@@ -56,16 +58,16 @@ Just a minus 5 if the feet are not touching the ground
 Is described by:
 $$reward-= 5*cos(abs(angle))$$
 
-### COM_reward
+### COM reward
 Described by:
-$$reward-= 10*Com_err$$
+$$reward-= 10*Com err$$
 Where the com error is the distance between the feet COM and the robot COM
 
 ### torso height
 Described by:
-$$reward+= 2* torso_height$$
+$$reward+= 2* torso height$$
 
-### goal_reward 
+### goal reward 
 Just a 100 if the robot reach the goal position described in the variable target_position in "src/include/robot.h" 
 
 ## How to run it
