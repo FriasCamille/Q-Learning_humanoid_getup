@@ -9,18 +9,19 @@
 #include <csignal>
 #include <atomic>
 #include <vector>
-#include <algorithm>  // Para std::copy
+#include <algorithm> 
 
 using namespace std;
 
 atomic<bool> running(true);
 
-void handle_sigint(int) {
+void handle_sigint(int) 
+{
     running = false;
 }
 
-// Corregido: cargar vector de floats
-vector<float> loadVector(const string& filename) {
+vector<float> loadVector(const string& filename) 
+{
     ifstream in(filename, ios::binary);
     if(!in.is_open()) {
         return vector<float>();
@@ -33,8 +34,8 @@ vector<float> loadVector(const string& filename) {
     return v;
 }
 
-// Corregido: guardar vector de floats
-void saveVector(const vector<float>& v, const string& filename) {
+void saveVector(const vector<float>& v, const string& filename) 
+{
     ofstream out(filename, ios::binary);
     size_t size = v.size();
     out.write(reinterpret_cast<const char*>(&size), sizeof(size));
@@ -45,7 +46,6 @@ int main(int argc, char* argv[])
 {
     signal(SIGINT, handle_sigint);
     
-    // Cargar configuración Q-learning
     YAML::Node config = YAML::LoadFile("resources/q_config.yaml");
     auto param = config["parameters"];
     auto p = param[0];
@@ -72,13 +72,6 @@ int main(int argc, char* argv[])
         }
     }
     
-    Environment env(model_path);
-    
-    if (view) {
-        viewer = new Viewer(env.get_model(), env.get_data());
-        cout << "Modo visualización ACTIVADO" << endl;
-    }
-    
     Robot darwin("resources/robot_config.yaml", disc);
     motors_numbers = darwin.get_motors().size();
     sensors_numbers = darwin.get_sensors().size();
@@ -98,19 +91,28 @@ int main(int argc, char* argv[])
     
     QLearning getup(states, actions, e, a, gamma, d);
     
-    // Intentar cargar Q-table pre-entrenada
-    vector<float> loaded_qtable = loadVector("getup_trainment");
-    if(!loaded_qtable.empty() && loaded_qtable.size() == states * actions) {
-        getup.set_table(loaded_qtable);  // Usar el nuevo método
+    vector<float> loaded_qtable = loadVector("trainings/getup_trainment");
+    cout<<"Cargando tabla..."<<endl;
+    if(!loaded_qtable.empty() && loaded_qtable.size() == states * actions) 
+    {
+        getup.set_table(loaded_qtable);  
         cout << "Q-table cargada exitosamente (" << loaded_qtable.size() << " valores)" << endl;
-    } else if (!loaded_qtable.empty()) {
-        cout << "Q-table cargada pero tamaño incorrecto. Esperado: " 
+    } else if (!loaded_qtable.empty()) 
+    {
+        cout << "Q-table inexistente o de tamaño incorrecto. Esperado: " 
              << states * actions << ", obtenido: " << loaded_qtable.size() << endl;
+    }
+
+     Environment env(model_path);
+    
+    if (view) 
+    {
+        viewer = new Viewer(env.get_model(), env.get_data());
+        cout << "Modo visualización ACTIVADO" << endl;
     }
     
     env.forward();
     
-    // Bucle principal de entrenamiento
     while(running)
     {
         if (restart)
@@ -119,8 +121,9 @@ int main(int argc, char* argv[])
             total_reward += episode_reward;
             average_reward = total_reward / episodes;
             
-            // Logging detallado cada 10 episodios
-            if (episodes % 10 == 0) {
+            
+            if (episodes % 10 == 0) 
+            {
                 cout << "\n=== EPISODIO " << episodes << " ===" << endl;
                 cout << "Recompensa episodio: " << episode_reward << endl;
                 cout << "Recompensa promedio: " << average_reward << endl;
@@ -129,35 +132,34 @@ int main(int argc, char* argv[])
                 cout << "Éxitos totales: " << succes << endl;
                 cout << "Tasa de éxito: " << (100.0 * succes / max(1, episodes)) << "%" << endl;
                 
-                // Guardar Q-table periódicamente
-                if (episodes % 50 == 0) {
-                    saveVector(getup.get_table(), "getup_trainment_backup_" + to_string(episodes));
+                
+                if (episodes % 50 == 0) 
+                {
+                    saveVector(getup.get_table(), "trainings/getup_trainment" + to_string(episodes));
                     cout << "Q-table guardada como backup" << endl;
                 }
             }
             
-            if (goal_flag) {
+            if (goal_flag) 
+            {
                 succes++;
                 cout << "¡ÉXITO! El robot se levantó correctamente en el episodio " << episodes << endl;
             }
             
-            // Reset del ambiente
             env.reset();
             env.forward();
             
-            // Posición inicial aleatoria más variada
             double random_angle = ((bool)randomInt(0,1))?-M_PI/2:M_PI/2;
             env.write_robot_position(darwin.get_robot_pos().c_str(), random_angle);
             
-            // Reset de motores a posición neutral
-            for (int i = 0; i < motors_numbers; i++) {
+            for (int i = 0; i < motors_numbers; i++) 
+            {
                 env.write_joint_position(darwin.get_motor_r_name(i).c_str(), 0);
                 env.write_joint_position(darwin.get_motor_l_name(i).c_str(), 0);
                 env.write_joint_force(darwin.get_motor_r_name(i).c_str(), 0);
                 env.write_joint_force(darwin.get_motor_l_name(i).c_str(), 0);
             }
             
-            // Reset de variables
             first = true;
             steps = 0;
             episode_reward = 0;
@@ -165,14 +167,14 @@ int main(int argc, char* argv[])
             goal_flag = false;
             step_flag = false;
             
-            // Decaimiento de épsilon
             getup.decay_e();
             
             restart = false;
         }
         
         // Leer estado actual
-        for (int i = 0; i < motors_numbers; i++) {
+        for (int i = 0; i < motors_numbers; i++) 
+        {
             double motor_angle = env.read_joint_position(darwin.get_motor_r_name(i).c_str());
             darwin.set_motor(i, motor_angle);
         }
@@ -181,15 +183,18 @@ int main(int argc, char* argv[])
         sensor_value = env.get_imu_vel(darwin.get_sensor_name(0).c_str()).y;
         darwin.set_sensor(0, sensor_value);
         
-        double torso_pitch = env.get_imu_pitch(darwin.get_sensor_name(1).c_str());
+        double torso_pitch = env.get_body_pitch(darwin.get_sensor_name(1).c_str());
         darwin.set_sensor(1, torso_pitch);
         
         // Actualizar Q-learning si no es el primer paso
-        if(!first) {
+        if(!first) 
+        {
             new_state = darwin.get_state_index();
             getup.update(present_state, action_taken, reward_given, new_state);
             present_state = new_state;
-        } else {
+        }
+        else 
+        {
             present_state = darwin.get_state_index();
             first = false;
         }
@@ -199,22 +204,26 @@ int main(int argc, char* argv[])
         darwin.action(action_taken);
         
         // Aplicar fuerzas a los motores
-        for (int i = 0; i < motors_numbers; i++) {
+        for (int i = 0; i < motors_numbers; i++) 
+        {
             env.write_joint_force(darwin.get_motor_r_name(i).c_str(), darwin.get_motor_position(i));
             env.write_joint_force(darwin.get_motor_l_name(i).c_str(), -darwin.get_motor_position(i));
         }
         steps++;
         
         // Avanzar simulación
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < 100; i++) 
+        {
             env.simstep();
             
         }
         
         // Renderizar si está activado
-        if(view) {
+        if(view) 
+        {
             viewer->render();
-            if(viewer->should_close()) {
+            if(viewer->should_close()) 
+            {
                 running = false;
                 break;
             }
@@ -222,13 +231,14 @@ int main(int argc, char* argv[])
             //this_thread::sleep_for(chrono::milliseconds(1));
         }
         
-        double torso_height =env.get_torso_height("torso");
+        double torso_height =env.get_body_height("torso");
         
         double total_collision_force = env.collision_force("r_foot", "ground") + 
                                        env.collision_force("l_foot", "ground");
         
-        colision_flag = env.collision("head", "ground");
-        reward_given = darwin.reward(colision_flag, torso_pitch, total_collision_force, torso_height);
+        colision_flag = env.collision("body", "ground");
+        double com_err = env.read_COM()[0] - env.read_COM("foot_r")[0];
+        reward_given = darwin.reward((env.collision_force("r_foot","ground")>0), colision_flag, torso_pitch, total_collision_force,com_err, torso_height);
         episode_reward += reward_given;
         
         // Verificar condiciones de terminación
@@ -236,11 +246,11 @@ int main(int argc, char* argv[])
         step_flag = (steps > 500);
         restart = (goal_flag || colision_flag || step_flag);
         
-        // Logging de depuración para estados objetivo
         if(goal_flag) {
             cout << "\nDEBUG - Estado objetivo alcanzado:" << endl;
             cout << "Estado actual: {";
-            for (size_t i = 0; i < darwin.get_state().size(); i++) {
+            for (size_t i = 0; i < darwin.get_state().size(); i++) 
+            {
                 cout << darwin.get_state()[i];
                 if(i < darwin.get_state().size() - 1) cout << ", ";
             }
@@ -252,8 +262,8 @@ int main(int argc, char* argv[])
             cout << "Fuerza total contacto: " << total_collision_force << " N" << endl;
         }
         
-        // Condición de salida por demasiados episodios
-        if(episodes > 10000) {
+        if(episodes > 10000) 
+        {
             cout << "Límite de episodios alcanzado (10000)" << endl;
             break;
         }
@@ -268,8 +278,8 @@ int main(int argc, char* argv[])
     cout << "Épsilon final: " << getup.get_epsilon() << endl;
     
     // Guardar Q-table final
-    saveVector(getup.get_table(), "getup_trainment_final");
-    cout << "Q-table final guardada como 'getup_trainment_final'" << endl;
+    saveVector(getup.get_table(), "trainings/getup_trainment");
+    cout << "Q-table final guardada como 'getup_trainment' en la carpeta trainings" << endl;
     
     // Limpieza
     if(view) delete viewer;

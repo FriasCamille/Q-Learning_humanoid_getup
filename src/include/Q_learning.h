@@ -65,7 +65,6 @@ public:
 
     inline const vector<float>& get_table()const noexcept{return Qtable;}
     
-    // NUEVO: Método para modificar la tabla Q
     inline void set_table(const vector<float>& new_table) noexcept
     {
         if(new_table.size() == Qtable.size()) {

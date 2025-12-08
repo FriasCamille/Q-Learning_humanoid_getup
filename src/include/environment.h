@@ -37,6 +37,15 @@ public:
     void forward() { mj_forward(m, d); }
     void reset() { mj_resetData(m, d); mj_forward(m, d);}
 
+    vector<double> read_COM(const char* body_name="")
+    {
+        double* com;
+        int id = mj_name2id(m, mjOBJ_BODY, body_name);
+        (id<0)?com = d->subtree_com:com = d->subtree_com + 3 * id;
+        vector<double> COM= {com[0], com[1], com[2]};
+        return COM;
+    }
+
     double read_joint_position(const char* jname) const 
     {
         int jid = mj_name2id(m, mjOBJ_JOINT, jname);
@@ -103,10 +112,10 @@ public:
         d->ctrl[act_id] = val;
     }
     
-    double get_imu_pitch(const char* imu_loc) const 
+    double get_body_pitch(const char* imu_loc) const 
     {
-        int torso_id = mj_name2id(m, mjOBJ_BODY, imu_loc);
-         const double* q = d->xquat + 4 * torso_id;   // w,x,y,z
+        int body_id = mj_name2id(m, mjOBJ_BODY, imu_loc);
+        const double* q = d->xquat + 4 * body_id;   // w,x,y,z
 
         double Zw[3];
         double z_local[3] = {0, 0, 1};  
@@ -115,7 +124,7 @@ public:
         double pitch = atan2(-Zw[0], Zw[2]);
 
         return pitch;
-       }
+    }
 
 
 
@@ -153,12 +162,13 @@ bool collision(const char* geom_name, const char* target_name, bool verbose = fa
             mj_contactForce(m, d, i, force);
             double normal_force = force[2];
             
-            if(verbose) {
+            if(verbose) 
+            {
                 cout << "Contacto detectado: " << geom_name << " con " << target_name 
                      << ", fuerza = " << normal_force << " N" << endl;
             }
             
-            if (normal_force >= 20.0)
+            if (normal_force >= 40.0)
                 return true;
         }
     }
@@ -166,17 +176,15 @@ bool collision(const char* geom_name, const char* target_name, bool verbose = fa
     return false;
 }
 
-double get_torso_height(const char* torso_name) const 
+double get_body_height(const char* body_name) const 
         {
-            int torso_id = mj_name2id(m, mjOBJ_BODY, torso_name);
-            if (torso_id < 0) 
+            int body_id = mj_name2id(m, mjOBJ_BODY, body_name);
+            if (body_id < 0) 
             {
-                cerr << ERROR << "Torso no encontrado: " << torso_name << endl;
+                cerr << ERROR << "Torso no encontrado: " << body_name << endl;
                 return 0.0;
             }
-            
-            // La altura es la coordenada Z de la posición del torso
-            return d->xpos[torso_id * 3 + 2];  // xpos[body_id*3 + 2] = coordenada Z
+            return d->xpos[body_id * 3 + 2];  
         }
 
 double collision_force(const char* geom_name, const char* target_name)

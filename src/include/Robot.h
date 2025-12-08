@@ -18,9 +18,6 @@ private:
     double reward_value;
     string robot_pos;
     
-    // Nuevas variables para seguimiento
-    double previous_action_sum;
-    vector<double> previous_motor_positions;
     
     inline void update_state() 
     {
@@ -31,19 +28,6 @@ private:
             else    
                 state[i] = sensors[i-motors.size()].get_iterator();
         }
-    }
-    
-    // Función para calcular cambio en acciones
-    inline double calculate_action_change(const vector<double>& current_positions)
-    {
-        if(previous_motor_positions.empty()) return 0.0;
-        
-        double total_change = 0.0;
-        for(size_t i = 0; i < current_positions.size(); i++)
-        {
-            total_change += abs(current_positions[i] - previous_motor_positions[i]);
-        }
-        return total_change / current_positions.size();
     }
 
 public:
@@ -59,13 +43,10 @@ public:
     inline string get_robot_pos(){return robot_pos;}
     inline bool goal(){return (state==goal_iterators)?true:false;}
     
-    inline void set_motor(int i, double value){
-        previous_motor_positions[i] = motors[i].get_present_position();
-        motors[i].prox(value);
-    }
+    inline void set_motor(int i, double value){motors[i].prox(value);}
     inline void set_sensor(int i, double value){sensors[i].prox(value);}
     
-    Robot(const char* config_path, int disc):D(disc), previous_action_sum(0.0)
+    Robot(const char* config_path, int disc):D(disc)
     {
         YAML::Node config = YAML::LoadFile(config_path);
         
@@ -91,14 +72,12 @@ public:
                 aux.add_position((l+j*step));
             }
             
-            // Usar posición objetivo en lugar de 0.0
+            
             double target_pos = (i < target_positions.size()) ? target_positions[i] : 0.0;
             goal_iterators.push_back(aux.prox(target_pos));
             aux.set_position(target_pos, aux.prox(target_pos));
             motors.push_back(aux);
         }
-        
-        previous_motor_positions.resize(motors.size(), 0.0);
         
         for (long unsigned int i =0; i<config_sensor.size();i++)
         {
@@ -114,8 +93,7 @@ public:
                 aux.add_position((l+j*step));
             }
             
-            // Para sensores, objetivo cerca de 0 (vertical)
-            double sensor_target = (i == 1) ? 0.0 : 0.0; // torso sensor target = 0 (vertical)
+            double sensor_target = 0.0;
             goal_iterators.push_back(aux.prox(sensor_target));
             aux.set_position(sensor_target, aux.prox(sensor_target));
             sensors.push_back(aux);
@@ -124,59 +102,35 @@ public:
         update_state();
     }
     
-    double reward(bool collision, double angle, double collision_force, double torso_height = 0.0)
+    double reward(bool ground,bool collision, double angle, double collision_force, double COM_err, double torso_height = 0.0)
     {
         double reward = 0.0;
-        
-        // 1. Penalización pequeña por paso de tiempo (incentiva eficiencia)
+
         reward -= 0.1;
-        
-        // 2. Penalización por colisión fuerte
-        if (collision) {
+
+        if (collision) 
+        {
             reward -= 100.0;
             cout << "¡COLISIÓN! Penalización fuerte aplicada" << endl;
         }
         
-        // 3. Recompensa por ángulo vertical (pitch cerca de 0)
-        // Usar coseno que es máximo en 0 y mínimo en ±π
         double angle_reward = cos(abs(angle));
         reward += 5.0 * angle_reward;
         
-        // 4. Recompensa por fuerza de contacto óptima en los pies
-        // Rango óptimo: 10-40N (contacto firme pero no excesivo)
-        double optimal_force_low = 10.0;
-        double optimal_force_high = 40.0;
-        
-        if (collision_force > 1.0) {  // Si hay contacto significativo
-            if (collision_force >= optimal_force_low && collision_force <= optimal_force_high) {
-                // Rango óptimo: recompensa máxima
-                double force_ratio = (collision_force - optimal_force_low) / (optimal_force_high - optimal_force_low);
-                reward += 2.0 * (1.0 - abs(force_ratio - 0.5) * 2.0);  // Pico en el medio
-            } else if (collision_force < optimal_force_low) {
-                // Contacto muy suave
-                reward += 1.0 * (collision_force / optimal_force_low);
-            } else {
-                // Contacto demasiado fuerte - penalización progresiva
-                double excess = collision_force - optimal_force_high;
-                reward -= 0.5 * excess / optimal_force_high;
-            }
-        }
-        
-        // 5. Recompensa por altura del torso (si se proporciona)
-        if (torso_height > 0.0) {
+        reward-=abs(COM_err)*10;
+
+        if (torso_height > 0.0) 
+        {
             reward += 2.0 * torso_height;
         }
-        
-        // 6. Penalización por movimientos bruscos
-        vector<double> current_positions;
-        for(size_t i = 0; i < motors.size(); i++) {
-            current_positions.push_back(motors[i].get_present_position());
+
+        if(!ground)
+        {
+            reward-=5.0;
         }
-        double action_change = calculate_action_change(current_positions);
-        reward -= 0.05 * action_change;
-        
-        // 7. Gran recompensa por alcanzar estado objetivo
-        if(goal_iterators == state) {
+
+        if(goal_iterators == state) 
+        {
             reward += 100.0;  // Recompensa positiva grande
             cout << "¡ESTADO OBJETIVO ALCANZADO! +100 recompensa" << endl;
         }
@@ -213,17 +167,6 @@ public:
             n/=3;
         }
         update_state();
-        
-        // Actualizar posiciones anteriores para cálculo de cambio
-        previous_motor_positions = old_positions;
     }
     
-    // Nuevo método para obtener todas las posiciones de motores
-    vector<double> get_all_motor_positions() {
-        vector<double> positions;
-        for(auto& motor : motors) {
-            positions.push_back(motor.get_present_position());
-        }
-        return positions;
-    }
 };
