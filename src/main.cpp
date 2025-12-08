@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
     double average_reward = 0, episode_reward = 0, total_reward = 0;
     
     const int disc = 9;
+    const char * trainment_path = (char*)"trainings/getup_trainment";
     
     const char * model_path = (char*)"resources/darwin_forces.xml";
     bool view = false;
@@ -91,7 +92,7 @@ int main(int argc, char* argv[])
     
     QLearning getup(states, actions, e, a, gamma, d);
     
-    vector<float> loaded_qtable = loadVector("trainings/getup_trainment");
+    vector<float> loaded_qtable = loadVector(trainment_path);
     cout<<"Cargando tabla..."<<endl;
     if(!loaded_qtable.empty() && loaded_qtable.size() == states * actions) 
     {
@@ -135,7 +136,7 @@ int main(int argc, char* argv[])
                 
                 if (episodes % 50 == 0) 
                 {
-                    saveVector(getup.get_table(), "trainings/getup_trainment" + to_string(episodes));
+                    saveVector(getup.get_table(), trainment_path + to_string(episodes));
                     cout << "Q-table guardada como backup" << endl;
                 }
             }
@@ -278,7 +279,7 @@ int main(int argc, char* argv[])
     cout << "Épsilon final: " << getup.get_epsilon() << endl;
     
     // Guardar Q-table final
-    saveVector(getup.get_table(), "trainings/getup_trainment");
+    saveVector(getup.get_table(), trainment_path);
     cout << "Q-table final guardada como 'getup_trainment' en la carpeta trainings" << endl;
     
     // Limpieza
