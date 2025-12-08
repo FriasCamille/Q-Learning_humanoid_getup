@@ -14,7 +14,7 @@ This is a series of experiments to try to solve the getup behaviour whitout the 
 
 ## System Approach
 Currently i'm trying to solve the getup simplifying the Robot only looking the sagital plane making virtually a robot with only 5 motors. After that i discretize all the motor ranges, you can change it in the "resources/robot_config.yaml" so motors and sensros will divide the range of action in N steps where N is the number of positions that a motor can take.
-![[resources/robot.png]]
+![robot simplification image](resources/robot.png)
 ### State
 The state vector is compossed by 7 variables:
 
