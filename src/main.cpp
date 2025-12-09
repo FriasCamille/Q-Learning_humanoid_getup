@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
                 
                 if (episodes % 50 == 0) 
                 {
-                    saveVector(getup.get_table(), trainment_path + to_string(episodes));
+                    saveVector(getup.get_table(), trainment_path);  
                     cout << "Q-table guardada como backup" << endl;
                 }
             }
