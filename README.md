@@ -75,5 +75,6 @@ Just a 100 if the robot reach the goal position described in the variable target
 Remember to satisfy the Dependencies listed here after that just git clone this repo and run the make file and if it compiles succesfully just type in cmd ./getup
 You can add true to visualize and a file path to your own robot model for mujoco. Now it currently has the Darwin OP mujoco model.
 
-
+## DEMO
+![Image](https://github.com/user-attachments/assets/fc0a5503-8638-431e-9827-85906af50ff0)
 
