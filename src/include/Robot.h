@@ -51,7 +51,6 @@ public:
         YAML::Node config = YAML::LoadFile(config_path);
         
         auto config_motor= config["motor"];
-        auto config_sensor= config["sensor"];
         robot_pos = config["position"][0]["name"].as<string>();
         
         // Posiciones objetivo más realistas para levantarse
@@ -79,25 +78,15 @@ public:
             motors.push_back(aux);
         }
         
-        for (long unsigned int i =0; i<config_sensor.size();i++)
+        vector <double> values = {-2/3*M_PI, -M_PI/2, -M_PI/4, -M_PI/6, -0.5, 0.4, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, M_PI/6, M_PI/4, M_PI/2, 2/3 *M_PI};
+        Component aux;
+        aux.add_name("torso");
+        for (int i=0; i< values.size(); i++)
         {
-            Component aux;  
-            auto c = config_sensor[i];
-            aux.add_name(c["name"].as<string>());
-            double u = c["u_limit"].as<double>();
-            double l = c["l_limit"].as<double>();
-            double step = abs(u-l)/(D-1);
-            
-            for (int j =0; j<D; j++)
-            {
-                aux.add_position((l+j*step));
-            }
-            
-            double sensor_target = 0.0;
-            goal_iterators.push_back(aux.prox(sensor_target));
-            aux.set_position(sensor_target, aux.prox(sensor_target));
-            sensors.push_back(aux);
+            aux.add_position(values[i]);
         }
+        sensors.push_back(aux);
+
         state.resize(motors.size() + sensors.size());
         update_state();
     }

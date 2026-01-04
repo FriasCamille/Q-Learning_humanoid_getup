@@ -24,14 +24,5 @@ motor:
     l_limit: -1.2
     u_limit: 1.35
 
-sensor:
-  - name: "imu_gyro"
-    l_limit: -5.0
-    u_limit: 5.0
-    
-  - name: "torso"
-    l_limit: -3.14
-    u_limit: 3.14
-
 position:
   - name: "robot_position"

@@ -76,8 +76,9 @@ int main(int argc, char* argv[])
     Robot darwin("resources/robot_config.yaml", disc);
     motors_numbers = darwin.get_motors().size();
     sensors_numbers = darwin.get_sensors().size();
+    cout<<"sensors:"<<sensors_numbers<<endl;
     
-    long unsigned int states = (long unsigned int)pow(disc, motors_numbers + sensors_numbers);
+    long unsigned int states = (long unsigned int)pow(disc, motors_numbers)*18;
     long unsigned int actions = (long unsigned int)pow(3, motors_numbers);
     
     cout << "Configuración del Robot:" << endl;
@@ -181,11 +182,8 @@ int main(int argc, char* argv[])
         }
         
         // Leer sensores
-        sensor_value = env.get_imu_vel(darwin.get_sensor_name(0).c_str()).y;
-        darwin.set_sensor(0, sensor_value);
-        
-        double torso_pitch = env.get_body_pitch(darwin.get_sensor_name(1).c_str());
-        darwin.set_sensor(1, torso_pitch);
+        double torso_pitch = env.get_body_pitch(darwin.get_sensor_name(0).c_str());
+        darwin.set_sensor(0, torso_pitch);
         
         // Actualizar Q-learning si no es el primer paso
         if(!first) 
