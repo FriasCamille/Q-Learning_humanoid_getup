@@ -168,7 +168,7 @@ bool collision(const char* geom_name, const char* target_name, bool verbose = fa
                      << ", fuerza = " << normal_force << " N" << endl;
             }
             
-            if (normal_force >= 40.0)
+            if (normal_force >= 80.0)
                 return true;
         }
     }

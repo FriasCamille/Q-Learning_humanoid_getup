@@ -81,7 +81,7 @@ public:
         vector <double> values = {-2/3*M_PI, -M_PI/2, -M_PI/4, -M_PI/6, -0.5, 0.4, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, M_PI/6, M_PI/4, M_PI/2, 2/3 *M_PI};
         Component aux;
         aux.add_name("torso");
-        for (int i=0; i< values.size(); i++)
+        for (unsigned long int i=0; i< values.size(); i++)
         {
             aux.add_position(values[i]);
         }

@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     int succes = 0, steps = 0, episodes = 0, motors_numbers = 0, sensors_numbers = 0;
     double average_reward = 0, episode_reward = 0, total_reward = 0;
     
-    const int disc = 9;
+    const int disc = 3;
     const char * trainment_path = (char*)"trainings/getup_trainment";
     
     const char * model_path = (char*)"resources/darwin_forces.xml";
@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
     motors_numbers = darwin.get_motors().size();
     sensors_numbers = darwin.get_sensors().size();
     cout<<"sensors:"<<sensors_numbers<<endl;
+    cout<<"Motor disc: "<<disc<<endl;
     
     long unsigned int states = (long unsigned int)pow(disc, motors_numbers)*18;
     long unsigned int actions = (long unsigned int)pow(3, motors_numbers);
@@ -88,7 +89,7 @@ int main(int argc, char* argv[])
     cout << "Acciones posibles: " << actions << endl;
     
     long unsigned int present_state = 0, new_state = 0, action_taken = 0;
-    double reward_given = 0, sensor_value = 0;
+    double reward_given = 0;
     bool first = true, colision_flag = false, goal_flag = false, step_flag = false, restart = false;
     
     QLearning getup(states, actions, e, a, gamma, d);
@@ -211,7 +212,7 @@ int main(int argc, char* argv[])
         steps++;
         
         // Avanzar simulación
-        for(int i = 0; i < 100; i++) 
+        for(int i = 0; i < 200; i++) 
         {
             env.simstep();
             
